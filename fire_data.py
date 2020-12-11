@@ -33,10 +33,11 @@ fireGpd = gpd.GeoDataFrame.from_features(firesJson['features']).set_crs(epsg=432
 oldFireGpd = gpd.GeoDataFrame.from_features(oldFiresJson['features']).set_crs(epsg=4326)
 
 # Get state data
-states = requests.get('https://eric.clst.org/assets/wiki/uploads/Stuff/gz_2010_us_040_00_5m.json').json()
-statesGpd = gpd.GeoDataFrame.from_features(states['features'])
+gpd.io.file.fiona.drvsupport.supported_drivers['KML'] = 'rw'
+statesGpd = gpd.read_file('data/cb_2019_us_state_20m.kml', driver = 'KML')
+
 # Create a subset of west coast states and define projection
-studyArea = statesGpd[statesGpd.NAME.str.contains('California|Oregon|Washington')].set_crs(epsg=4326)
+studyArea = statesGpd[statesGpd.Name.str.contains('California|Oregon|Washington')]
 fireSubset = gpd.sjoin(fireGpd, studyArea, 'inner', 'within')[colList]
 oldFireSubset = gpd.sjoin(oldFireGpd, studyArea, 'inner', 'within')[colList]
 

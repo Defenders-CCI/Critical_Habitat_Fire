@@ -23,14 +23,14 @@ fireGpd = gpd.read_file(firesPath, driver = 'GeoJSON')
 oldFireGpd = gpd.read_file(oldFiresPath , driver = 'GeoJSON')
 fireJson = json.loads(open(firesPath, 'r').read())
 oldFireJson = json.loads(open(oldFiresPath, 'r').read())
-burned = gpd.GeoDataFrame.from_file(chPath, driver = 'GeoJSON')
+burned = gpd.read_file(chPath, driver = 'GeoJSON')
 
 # Generate list of species w/designated CH in CA, OR, WA
 species = burned.sciname.tolist()
 
 # Calculate total burned area
 totBurn = burned['burned'].sum()/100000
-burnText = '{:.2f} km<sup>2</sup> of critical habitat burned'.format(totBurn)
+burnText = '{:.2f} km\u00b2 of critical habitat burned'.format(totBurn)
 # create the initial map of burned area and bar chart
 fires = fxn.make_fire_map(fireJson, fireGpd, oldFireJson, oldFireGpd)
 bars = fxn.make_bar_chart(burned)
@@ -53,7 +53,8 @@ dropdown = dcc.Dropdown(
         style = {'color':'black'}
         )
 
-alert = dbc.Alert(burnText, style = {'backgroundColor':'orange', 'color':'#003B87'})
+alert = dbc.Alert(burnText,
+                  style = {'backgroundColor':'orange', 'color':'#003B87'})
 
 title = html.H3(children='West coast fires & critical habitat')
 explanation = html.P('This app calculates and displays the amount of designated critical habitat that has been burned by wildfire in CA, OR, & WA since June 2020.')
@@ -115,3 +116,7 @@ def update_map(sp):
 
 if __name__ == '__main__':
     app.run_server(debug=True)
+
+# for deployed version
+#if __name__ == '__main__':
+#    app.run_server(host = '0.0.0.0')

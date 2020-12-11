@@ -18,7 +18,8 @@ chGpd = gpd.read_file(chPath, driver = 'GeoJSON').to_crs(epsg = 3395)
 
 # merge all fire data and project
 merged = fireGpd.append(oldFireGpd).to_crs(epsg = 3395)
-#exploded = merged.explode()
+
+# unary union creates a union of all geometries in a geoseries
 fireUnion = merged.geometry.unary_union
 #chUnion = chGpd.geometry.buffer(0.1).unary_union
 #
