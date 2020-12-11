@@ -6,7 +6,6 @@ Created on Fri Dec 11 13:44:35 2020
 """
 import requests
 import zipfile
-import geopandas as gpd
 import os
 #from os.path import basename
 #from os import listdir

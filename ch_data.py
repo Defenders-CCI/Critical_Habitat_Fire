@@ -6,7 +6,6 @@ Created on Wed Oct  7 22:26:52 2020
 """
 import functions as fxn
 import geopandas as gpd
-import requests
 
 # get list of all species with CH in CA, OR, WA
 species = list(fxn.get_species_list())
