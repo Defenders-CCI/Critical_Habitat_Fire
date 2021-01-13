@@ -16,11 +16,16 @@ for i in range(len(species)):
     spGpd = gpd.GeoDataFrame.from_features(spJson['features'])
     chGpd = chGpd.append(spGpd)
  
+# read in state data, native projection is 4326
 gpd.io.file.fiona.drvsupport.supported_drivers['KML'] = 'rw'
 statesGpd = gpd.read_file('data/cb_2019_us_state_20m.kml', driver = 'KML')
 
 # Create a subset of west coast states and define projection
-studyArea = statesGpd[statesGpd.Name.str.contains('California|Oregon|Washington')].to_crs(epsg = 3395)
-chSubset = gpd.sjoin(chGpd, studyArea, 'inner', 'within')
+studyArea = statesGpd[statesGpd.Name.str.contains('California|Oregon|Washington')]
+ch = chGpd.set_crs(epsg = 4326)
 
-chSubset.to_file('data/chGPD.geojson', driver = 'GeoJSON')
+chSubset = gpd.sjoin(ch, studyArea, 'inner', 'within')[['comname', 'geometry', 'sciname']]
+
+chSubUnique = chSubset.dissolve(by = 'sciname')
+
+chSubUnique.to_file('data/chGPD.geojson', driver = 'GeoJSON')
