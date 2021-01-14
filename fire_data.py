@@ -21,7 +21,7 @@ firesRequest = requests.get('https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgi
 
 firesJson = firesRequest.json()
 
-oldFiresRequest = requests.get("https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/Public_Wildfire_Perimeters_View/FeatureServer/0/query?where=DateCurrent%20%3E%3D%20TIMESTAMP%20'2020-08-01%2000%3A00%3A00'%20AND%20DateCurrent%20%3C%3D%20TIMESTAMP%20'{}%2000%3A00%3A00'&outFields=*&outSR=4326&f=geojson".format(datetime.datetime.strftime(today, '%Y-%m-%d')))
+oldFiresRequest = requests.get("https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/Public_Wildfire_Perimeters_View/FeatureServer/0/query?where=DateCurrent%20%3E%3D%20TIMESTAMP%20'2020-06-01%2000%3A00%3A00'%20AND%20DateCurrent%20%3C%3D%20TIMESTAMP%20'{}%2000%3A00%3A00'&outFields=*&outSR=4326&f=geojson".format(datetime.datetime.strftime(today, '%Y-%m-%d')))
 
 oldFiresJson = oldFiresRequest.json()
 
