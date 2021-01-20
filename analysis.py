@@ -5,10 +5,9 @@ Created on Wed Sep 23 13:19:54 2020
 @author: MEvans
 """
 import geopandas as gpd
-import functions as fxn
-import pandas as pd
 
 # Load our fire data
+print('reading data')
 firesPath = 'data/fireGPD.geojson'
 oldFiresPath = 'data/oldFireGPD.geojson'
 fireGpd = gpd.read_file(firesPath, driver = 'GeoJSON')
@@ -17,10 +16,11 @@ chPath = 'data/chGPD.geojson'
 chGpd = gpd.read_file(chPath, driver = 'GeoJSON').to_crs(epsg = 3395)
 
 # merge all fire data and project
+print('merging current and old fires')
 merged = fireGpd.append(oldFireGpd).to_crs(epsg = 3395)
 
 # unary union creates a union of all geometries in a geoseries
-fireUnion = merged.geometry.unary_union
+fireUnion = merged.geometry[merged.geometry.is_valid].unary_union
 #chUnion = chGpd.geometry.buffer(0.1).unary_union
 #
 #area = chUnion.intersection(fireUnion).area
@@ -38,5 +38,7 @@ fireUnion = merged.geometry.unary_union
 #df.to_csv('data/intersections.csv')
 #print(area)
 
+print('computing ch x burned intersection')
 chGpd['burned'] = chGpd.geometry.buffer(0.1).intersection(fireUnion).area
+print('writing to file')
 chGpd.to_file('data/burned.geojson', driver = 'GeoJSON')
