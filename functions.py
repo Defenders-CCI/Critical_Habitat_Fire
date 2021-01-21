@@ -123,9 +123,9 @@ def make_ch_map(sp, fireJson, fireGpd, oldFireJson, oldFireGpd):
         geojson = oldFireJson,
         locations = oldSubset.GlobalID,
         featureidkey = 'properties.GlobalID',
-        z = round(oldSubset.GISAcres, 0),
+        z = round(oldSubset.Area/1000000, 2),
         text = subset.IncidentName,
-        hovertemplate = "Name: %{text}<br>" + "Acres: %{z}",
+        hovertemplate = "Name: %{text}<br>" + "Area: %{z} km<sup>2</sup>",
         colorscale = ['#a5a5a5', '#a5a5a5'],
         marker = {'line':{'color':'black', 'width':2}},
         showlegend = True,
@@ -142,17 +142,17 @@ def make_ch_map(sp, fireJson, fireGpd, oldFireJson, oldFireGpd):
         geojson = fireJson,
         locations = subset.GlobalID,
         featureidkey = 'properties.GlobalID',
-        z = round(subset.GISAcres, 0),
+        z = round(subset.Area/1000000, 2),
 #        colorscale = 'Hot',
         colorscale = ['orange', 'orange'],
         text = subset.IncidentName,
-        hovertemplate = "Name: %{text}<br>" + "Acres: %{z}",
+        hovertemplate = "Name: %{text}<br>" + "Area: %{z} km<sup>2</sup>",
         showlegend = True,
         showscale = False,
         colorbar = {
             'x':0,
             'title':{
-                'text':'Burned acres'
+                'text':'Burned km2'
             }
         }
         )
@@ -168,17 +168,17 @@ def make_fire_map(fireJson, fireGpd, oldFireJson, oldFireGpd):
             geojson = fireJson,
             locations = fireGpd.GlobalID,
             featureidkey = 'properties.GlobalID',
-            z = fireGpd.GISAcres,
+            z = round(fireGpd.Area/1000000, 2),
 #            colorscale = 'Hot',
             colorscale = ['orange', 'orange'],
             text = fireGpd.IncidentName,
-            hovertemplate = "Name: %{text}<br>" + "Acres: %{z}",
+            hovertemplate = "Name: %{text}<br>" + "Area: %{z} km<sup>2</sup>",
             showlegend = True,
             showscale = False,
             colorbar = {
                     'x':0,
                     'title':{
-                            'text':'Burned acres'}
+                            'text':'Burned km2'}
                     }
     )
     
@@ -187,8 +187,10 @@ def make_fire_map(fireJson, fireGpd, oldFireJson, oldFireGpd):
             geojson = oldFireJson,
             locations =oldFireGpd.GlobalID,
             featureidkey = 'properties.GlobalID',
-            z = oldFireGpd.GISAcres,
+            z = round(oldFireGpd.Area/1000000, 2),
             colorscale = ['#a5a5a5', '#a5a5a5'],
+            text = oldFireGpd.IncidentName,
+            hovertemplate = "Name: %{text}<br>" + "Area: %{z} km<sup>2</sup>",
             marker = {'line':{'color':'black', 'width':2}},
             showscale = False,
             showlegend = True
@@ -259,8 +261,8 @@ def make_species_bar(sp):
     ---
     Plotly Figure
     """
-    area = sp.area.sum()/100000
-    burn = sp.burned.sum()/100000
+    area = sp.area.sum()/1000000
+    burn = sp.burned.sum()/1000000
     comname = sp.comname
     trace1 = go.Bar(
             x = [area-burn],

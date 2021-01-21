@@ -23,7 +23,7 @@ statesGpd = gpd.read_file('data/cb_2019_us_state_20m.kml', driver = 'KML')
 studyArea = statesGpd[statesGpd.Name.str.contains('California|Oregon|Washington')]
 
 # define fire columns were interested in
-colList = ['geometry', 'ComplexName', 'DateCurrent', 'CreateDate', 'GISAcres', 'GlobalID', 'IncidentName']
+colList = ['geometry', 'ComplexName', 'DateCurrent', 'CreateDate', 'GlobalID', 'IncidentName']
 
 ## Use the Interagency Fire Data Portal to get current and past fire data
 # https://data-nifc.opendata.arcgis.com/datasets/wildfire-perimeters
@@ -66,14 +66,15 @@ def get_current_data():
     # recursively get current fire data for 2021
     recursive_fire_data(fireURL, '2020-12-15', today, 6, gpdList)
     # create single geodataframe from list of geodataframe subsets
-    fireGpd = gpd.GeoDataFrame(
+    df = gpd.GeoDataFrame(
             pd.concat(gpdList, axis = 0, ignore_index = True),
             crs = gpdList[0].crs
             )
     # select fire polygons within CA, OR, WA study area
-    fireSubset = gpd.sjoin(fireGpd, studyArea, 'inner', 'within')[colList]
+    subset = gpd.sjoin(df, studyArea, 'inner', 'within')[colList]
     # write fire polygons to file
-    fireSubset.to_file('data/fireGPD.geojson', driver = 'GeoJSON')
+    subset['Area'] = subset.geometry.to_crs(epsg=3395).area
+    subset.to_file('data/fireGPD.geojson', driver = 'GeoJSON')
     
     
 #firesRequest = requests.get('https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/Public_Wildfire_Perimeters_View/FeatureServer/0/query?where=1%3D1&outFields=*&geometry=%5B%5B%5B-125.25859375%2C%2049.05565283019709%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-124.6873046875%2C%2039.69425229061023%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-121.1716796875%2C%2034.32955443278273%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-117.5681640625%2C%2032.235755670897845%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-114.975390625%2C%2032.45851121119902%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-111.19609375%2C%2031.151423633862105%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-108.9548828125%2C%2031.189024707915397%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-109.1306640625%2C%2040.96720543432847%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-111.108203125%2C%2041.066677669125276%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-111.0642578125%2C%2044.57849399879169%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-112.95390625%2C%2044.484512810104995%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-116.2498046875%2C%2049.026845997157295%5D%5D%5D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=4326&f=geojson')
@@ -88,14 +89,16 @@ def get_2020_data():
 
     recursive_fire_data(oldFireURL, '2020-06-01', '2020-12-31', 12, gpdList)
             
-    oldFireGpd = gpd.GeoDataFrame(
+    df = gpd.GeoDataFrame(
             pd.concat(gpdList, axis = 0, ignore_index = True),
             crs = gpdList[0].crs
             )
-    print('size of unfiltered data', len(oldFireGpd))
-    oldFireSubset = gpd.sjoin(oldFireGpd, studyArea, 'inner', 'within')[colList]
-    print('size of filtered data', len(oldFireSubset))
-    oldFireSubset.to_file('data/oldFireGPD.geojson', driver = 'GeoJSON')
+    print('size of unfiltered data', len(df))
+    subset = gpd.sjoin(df, studyArea, 'inner', 'within')[colList]
+    print('size of filtered data', len(subset))
+    dissolved = subset.dissolve(by = 'IncidentName')
+    dissolved['Area'] = dissolved.geometry.to_crs(epsg=3395).area
+    dissolved.to_file('data/oldFireGPD.geojson', driver = 'GeoJSON')
     
 
 # alternative using bounds of CA, OR, WA - not working due to timeout   

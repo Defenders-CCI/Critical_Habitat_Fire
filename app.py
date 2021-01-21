@@ -26,10 +26,13 @@ oldFireJson = json.loads(open(oldFiresPath, 'r').read())
 burned = gpd.read_file(chPath, driver = 'GeoJSON')
 
 # Generate list of species w/designated CH in CA, OR, WA
-species = burned.sciname.tolist()
+species = list(set(burned.sciname.tolist()))
+comnames = sorted(list(set(burned.comname.tolist())))
+options = [{'label':'All species', 'value':''}]
+options.extend([{'label': x, 'value': burned.sciname[burned.comname == x].values[0]} for x in comnames])
 
-# Calculate total burned area
-totBurn = burned['burned'].sum()/100000
+# Calculate total burned area in km2
+totBurn = burned['burned'].sum()/1000000
 burnText = '{:.2f} km\u00b2 of critical habitat burned'.format(totBurn)
 # create the initial map of burned area and bar chart
 fires = fxn.make_fire_map(fireJson, fireGpd, oldFireJson, oldFireGpd)
@@ -49,7 +52,7 @@ graph = dcc.Graph(
 
 dropdown = dcc.Dropdown(
         id = 'species_dropdown',
-        options = [{'label': burned.comname[x], 'value': burned.sciname[x]} for x in range(len(species))],
+        options = options,
         style = {'color':'black'}
         )
 
@@ -97,12 +100,12 @@ app.layout = dbc.Container([
 
 def update_map(sp):
     if(sp in species):
-        subset = burned[burned.sciname == sp].reset_index()
+        subset = burned[burned.sciname.str.contains(sp)].reset_index()
         newMap = fxn.make_ch_map(sp, fireJson, fireGpd, oldFireJson, oldFireGpd)
         newBar = fxn.make_species_bar(subset)
-#    else:
-#        newMap = fires
-#        newBar = bars
+    else:
+        newMap = fires
+        newBar = bars
     return newMap, newBar
 
 #@app.callback(
