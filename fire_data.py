@@ -96,7 +96,7 @@ def get_2020_data():
     print('size of unfiltered data', len(df))
     subset = gpd.sjoin(df, studyArea, 'inner', 'within')[colList]
     print('size of filtered data', len(subset))
-    dissolved = subset.dissolve(by = 'IncidentName')
+    dissolved = subset[subset.geometry.is_valid].dissolve(by = 'IncidentName')
     dissolved['Area'] = dissolved.geometry.to_crs(epsg=3395).area
     dissolved.to_file('data/oldFireGPD.geojson', driver = 'GeoJSON')
     

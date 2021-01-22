@@ -228,7 +228,7 @@ def make_bar_chart(ch):
     duplicates = [not x for x in ch.duplicated(['comname', 'burned'])]
     topTen = ch[duplicates & (ch.burned > 0)].sort_values(by = 'burned', ascending = False)#.iloc[0:10]
     
-    burned = topTen.burned/100000
+    burned = topTen.burned/1000000
     trace = go.Bar(
         y = topTen.comname,
         x = burned,
