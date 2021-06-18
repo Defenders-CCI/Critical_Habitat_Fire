@@ -38,6 +38,7 @@ burnText = '{:.2f} km\u00b2 of critical habitat burned'.format(totBurn)
 fires = fxn.make_fire_map(fireJson, fireGpd, oldFireJson, oldFireGpd)
 bars = fxn.make_bar_chart(burned)
 
+# Create UI components
 Map = dcc.Graph(
         id = 'map',
         figure = fires,
@@ -60,12 +61,14 @@ alert = dbc.Alert(burnText,
                   style = {'backgroundColor':'orange', 'color':'#003B87'})
 
 title = html.H3(children='West coast fires & critical habitat')
+
 explanation = html.P('This app calculates and displays the amount of designated critical habitat that has been burned by wildfire in CA, OR, & WA since June 2020.')
-box = html.Div(className = 'box', 
-               children = ['Total critical habitat burned', 'km<sup>2</sup>'],
-               style = {'textAlign': 'center',
-                        'backgroundColor': '#003B87',
-                        'color': '#f2f2f2'})
+
+#box = html.Div(className = 'box', 
+#               children = ['Total critical habitat burned', 'km<sup>2</sup>'],
+#               style = {'textAlign': 'center',
+#                        'backgroundColor': '#003B87',
+#                        'color': '#f2f2f2'})
 
 #loading = dcc.Loading(
 #        id = 'loading',
@@ -77,8 +80,11 @@ server = app.server
 
 app.layout = dbc.Container([
         dbc.Row([
+                html.H2('Critical Burn: Western U.S. Wildfire and ESA Critical Habitat')
+                ]),
+        dbc.Row([
                 dbc.Col([
-                        html.H3('West coast fires & critical habitat', style = {'color':'#333333'}),
+                        html.H3('About this app', style = {'color':'#333333'}),
                         explanation,
                         alert,
                         html.P('Select a species'),

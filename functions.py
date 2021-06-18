@@ -222,8 +222,10 @@ def calc_burned_area(ch, fire, dist):
 # make a figure of burned area by species
 def make_bar_chart(ch):
     """Create a plotly bar chart showing burned critical habitat by species
-    @param ch {GeoDataFrame}:critical habitat data with burned area
-    @return {plotly Figure}: bar chart figure
+    Parameters:
+        ch (GeoDataFrame):critical habitat data with burned area
+    Return:
+        plotly Figure: bar chart figure
     """
     duplicates = [not x for x in ch.duplicated(['comname', 'burned'])]
     topTen = ch[duplicates & (ch.burned > 0)].sort_values(by = 'burned', ascending = False)#.iloc[0:10]
@@ -239,8 +241,12 @@ def make_bar_chart(ch):
         hovertemplate = "%{y}<br>" + "%{x:.2f} km<sup>2</sup> burned",
         marker_color = 'blue')
     
-    layout = go.Layout(xaxis = {'title':'Burned area (km<sup>2</sup>)'},
-                       margin = {'r':15, 'l':15, 't':30, 'b':15},
+    layout = go.Layout(xaxis = {'title':'Burned area (km<sup>2</sup>)',
+                                'showgrid':False},
+                       margin = {'r':15,
+                                 'l':15, 
+                                 't':30,
+                                 'b':15},
                        title = {
                                'text':'Species w/Burned Critical Habitat',
                                'x': 0.5,
