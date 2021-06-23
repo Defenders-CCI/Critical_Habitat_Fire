@@ -78,7 +78,7 @@ app = dash.Dash(__name__, external_stylesheets = [dbc.themes.BOOTSTRAP])
 
 app.layout = dbc.Container([
         dbc.Row([
-                html.H2('Critical Burn: Western U.S. Wildfire and ESA Critical Habitat')
+                html.H2('Western U.S. Wildfire and ESA Critical Habitat')
                 ]),
         dbc.Row([
                 dbc.Col([
@@ -121,11 +121,11 @@ def update_map(sp):
 #    time.sleep(1)
 #    return value
 
-#if __name__ == '__main__':
-#    app.run_server(debug=True)
+if __name__ == '__main__':
+    app.run_server(debug=True)
 
 # for deployed version
 server = app.server
 
-if __name__ == '__main__':
-    app.run_server(host = '0.0.0.0', port = '5000')
+#if __name__ == '__main__':
+#    app.run_server(host = '0.0.0.0', port = '5000')

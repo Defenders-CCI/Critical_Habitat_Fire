@@ -119,7 +119,7 @@ def make_ch_map(sp, fireJson, fireGpd, oldFireJson, oldFireGpd):
     if len(oldSubset) > 0:
 
      layer1 = go.Choroplethmapbox(
-        name = 'Burned 2020',
+        name = 'Burned 2021',
         geojson = oldFireJson,
         locations = oldSubset.GlobalID,
         featureidkey = 'properties.GlobalID',
@@ -183,7 +183,7 @@ def make_fire_map(fireJson, fireGpd, oldFireJson, oldFireGpd):
     )
     
     layer2 = go.Choroplethmapbox(
-            name = 'Burned 2020',
+            name = 'Burned 2021',
             geojson = oldFireJson,
             locations =oldFireGpd.GlobalID,
             featureidkey = 'properties.GlobalID',

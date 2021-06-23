@@ -28,7 +28,7 @@ sa = studyArea.geometry.unary_union
 #sa_dict = json.loads(sa_json)
 bbox = sa.bounds
 # define fire columns were interested in
-#colList = ['geometry', 'ComplexName', 'DateCurrent', 'CreateDate', 'GlobalID', 'IncidentName']
+oldColList = ['geometry', 'IncidentName', 'DateCurrent', 'CreateDate', 'GlobalID', ]
 # Update for 2021 data
 colList = ['geometry', 'poly_IncidentName', 'poly_DateCurrent', 'poly_CreateDate', 'poly_GlobalID']
 
@@ -76,7 +76,8 @@ def get_current_data():
     request = requests.get(url, params = params)
     fireJson = request.json()
     gdf = gpd.GeoDataFrame.from_features(fireJson['features']).set_crs(epsg=4326)
-
+    #rename columns from new API to match old analysis code
+    gdf = gdf.rename(columns = dict(zip(colList, oldColList)))
 #    # create empty list to hold temporal subset geodataframes
 #    gpdList = []
 #    # define base url of api that will be modified with dates
@@ -120,7 +121,7 @@ def get_old_data():
     request = requests.get(url, params = params)
     fireJson = request.json()
     gdf = gpd.GeoDataFrame.from_features(fireJson['features']).set_crs(epsg=4326)
-    
+    gdf = gdf.rename(columns = dict(zip(colList, oldColList)))
 #    oldFireURL = "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/Archived_Wildfire_Perimeters2/FeatureServer/0/query?where=CreateDate%20%3E%3D%20TIMESTAMP%20%27{}%2000%3A00%3A00%27%20AND%20CreateDate%20%3C%3D%20TIMESTAMP%20%27{}%2000%3A00%3A00%27%20AND%20GISAcres%20%3E%3D%205000%20AND%20GISAcres%20%3C%3D%201000000&outFields=*&outSR=4326&f=geojson"
 #
 #    recursive_fire_data(oldFireURL, '2020-06-01', '2020-12-31', 12, gpdList)
@@ -132,7 +133,7 @@ def get_old_data():
 #    print('size of unfiltered data', len(df))
 #    subset = gpd.sjoin(gdf, studyArea, 'inner', 'within')[colList]
     print('size of filtered data', len(gdf))
-    dissolved = gdf[gdf.geometry.is_valid].dissolve(by = colList[1])
+    dissolved = gdf[gdf.geometry.is_valid].dissolve(by = oldColList[1])
 #    subset = gpd.sjoin(dissolved, studyArea, 'inner', 'within')
     dissolved['Area'] = dissolved.geometry.to_crs(epsg=3395).area
     dissolved.to_file('data/oldFireGPD.geojson', driver = 'GeoJSON')
