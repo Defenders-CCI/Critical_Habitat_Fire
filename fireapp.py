@@ -76,8 +76,6 @@ explanation = html.P('This app calculates and displays the amount of designated 
 
 app = dash.Dash(__name__, external_stylesheets = [dbc.themes.BOOTSTRAP])
 
-server = app.server
-
 app.layout = dbc.Container([
         dbc.Row([
                 html.H2('Critical Burn: Western U.S. Wildfire and ESA Critical Habitat')
@@ -123,9 +121,11 @@ def update_map(sp):
 #    time.sleep(1)
 #    return value
 
-if __name__ == '__main__':
-    app.run_server(debug=True)
+#if __name__ == '__main__':
+#    app.run_server(debug=True)
 
 # for deployed version
-#if __name__ == '__main__':
-#    app.run_server(host = '0.0.0.0')
+server = app.server
+
+if __name__ == '__main__':
+    app.run_server(host = '0.0.0.0', port = '5000')
