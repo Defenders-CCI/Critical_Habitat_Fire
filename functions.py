@@ -209,10 +209,12 @@ def make_fire_map(fireJson, fireGpd, oldFireJson, oldFireGpd):
 
 def calc_burned_area(ch, fire, dist):
     """Calculate the burned area within given distance of critical habitat polygons
-    @param ch {geometry}: critical habitat polygon union
-    @param fire {geometry}: burned area polygon union
-    @param dist {float}: distance
-    @return {float}: acres of burned area
+    Parameters:
+        ch {geometry}: critical habitat polygon union
+        fire {geometry}: burned area polygon union
+        dist {float}: distance
+    Return:
+        float: acres of burned area
     """
     buffered = ch.buffer(dist)
     intersection = fire.intersection(buffered)

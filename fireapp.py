@@ -9,7 +9,7 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import functions as fxn
 import geopandas as gpd
 import json
@@ -60,10 +60,26 @@ dropdown = dcc.Dropdown(
 alert = dbc.Alert(burnText,
                   style = {'backgroundColor':'orange', 'color':'#003B87'})
 
-title = html.H3(children='West coast fires & critical habitat')
+title = html.H2('Western U.S. Wildfire and ESA Critical Habitat')
 
 explanation = html.P('This app calculates and displays the amount of designated critical habitat that has been burned by wildfire in CA, OR, & WA since June 2020.')
 
+modal = html.Div(
+        [#dbc.Button('Open modal', id = 'open'),
+         dbc.Modal(
+                 [dbc.ModalHeader("Wildfire & Wildlife"),
+                  dbc.ModalBody('Wildfire is not always detrimental to wildlife, and fires are part of the natural cycle of many ecosystems.\
+                                For species like X,Y,&Z that inhabit early successional habitat, fire is necessary to create new habitat.\
+                                Fires that burn hotter, longer, and larger areas than historically are a threat to species if they eliminate a substantial portion of existing habitat,\
+                                or burn habitat that is not easily restored, like old growth forest.'),
+                  dbc.ModalFooter(
+                          dbc.Button('Close', id = 'close', className = 'ml-auto')
+                          )
+                  ], id = 'modal', is_open = True, keyboard = True
+                 )
+        ]
+        )
+                 
 #box = html.Div(className = 'box', 
 #               children = ['Total critical habitat burned', 'km<sup>2</sup>'],
 #               style = {'textAlign': 'center',
@@ -77,8 +93,8 @@ explanation = html.P('This app calculates and displays the amount of designated 
 app = dash.Dash(__name__, external_stylesheets = [dbc.themes.BOOTSTRAP])
 
 app.layout = dbc.Container([
-        dbc.Row([
-                html.H2('Western U.S. Wildfire and ESA Critical Habitat')
+        modal,
+        dbc.Row([title         
                 ]),
         dbc.Row([
                 dbc.Col([
@@ -101,7 +117,6 @@ app.layout = dbc.Container([
          Output(component_id = 'bars', component_property = 'figure')],
         [Input(component_id = 'species_dropdown', component_property = 'value')]
         )
-
 def update_map(sp):
     if(sp in species):
         subset = burned[burned.sciname.str.contains(sp)].reset_index()
@@ -111,6 +126,15 @@ def update_map(sp):
         newMap = fires
         newBar = bars
     return newMap, newBar
+
+@app.callback(
+        Output('modal', 'is_open'),
+        [Input('close', 'n_clicks')],
+        [State('modal', 'is_open')])
+def toggle_modal(n1, is_open):
+    if n1:
+        return not is_open
+    return is_open
 
 #@app.callback(
 #        Output(component_id = "loading-output", component_property =  "children"),
