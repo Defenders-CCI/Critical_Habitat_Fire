@@ -41,8 +41,7 @@ bars = fxn.make_bar_chart(burned)
 # Create UI components
 Map = dcc.Graph(
         id = 'map',
-        figure = fires,
-#        style = {'height':500, 'width':1000}
+        figure = fires
 )
 
 graph = dcc.Graph(
@@ -91,6 +90,8 @@ modal = html.Div(
 #        children = html.Div(graph))
 
 app = dash.Dash(__name__, external_stylesheets = [dbc.themes.BOOTSTRAP])
+# for deployed version
+app = dash.Dash(__name__, external_stylesheets = [dbc.themes.BOOTSTRAP], requests_pathname_prefix = '/app/fireapp/', routes_pathname_prefix = '/app/fireapp/')
 
 app.layout = dbc.Container([
         modal,

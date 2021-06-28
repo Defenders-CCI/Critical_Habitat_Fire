@@ -249,6 +249,7 @@ def make_bar_chart(ch):
                                  'l':15, 
                                  't':30,
                                  'b':15},
+                       height = 300,    
                        title = {
                                'text':'Species w/Burned Critical Habitat',
                                'x': 0.5,
