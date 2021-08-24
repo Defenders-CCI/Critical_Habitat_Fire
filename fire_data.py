@@ -72,7 +72,7 @@ def get_current_data():
     # https://data-nifc.opendata.arcgis.com/datasets/nifc::wfigs-current-wildland-fire-perimeters/about
     url = 'https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/Current_WildlandFire_Perimeters/FeatureServer/0/query'
 
-    params = f"where=1%3D1&outFields={colList[1]},{colList[2]},{colList[3]},{colList[4]}&f=geoJSON&geometryType=esriGeometryEnvelope&geometry={bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}&spatialRel=esriSpatialRelIntersects"
+    params = f"where=1%3D1&outFields={colList[1]},{colList[2]},{colList[3]},{colList[4]}&f=geoJSON&geometryType=esriGeometryEnvelope&inSR=4326&geometry={bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}&spatialRel=esriSpatialRelIntersects"
     request = requests.get(url, params = params)
     fireJson = request.json()
     gdf = gpd.GeoDataFrame.from_features(fireJson['features']).set_crs(epsg=4326)
@@ -94,7 +94,9 @@ def get_current_data():
 #    subset = gpd.sjoin(gdf, studyArea, 'inner', 'within')[colList]
     # write fire polygons to file
     gdf['Area'] = gdf.geometry.to_crs(epsg=3395).area
+    print('writing new data to file')
     gdf.to_file('data/fireGPD.geojson', driver = 'GeoJSON')
+    print('data saved to data/fireGPD.geojson')
     
     
 #firesRequest = requests.get('https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/Public_Wildfire_Perimeters_View/FeatureServer/0/query?where=1%3D1&outFields=*&geometry=%5B%5B%5B-125.25859375%2C%2049.05565283019709%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-124.6873046875%2C%2039.69425229061023%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-121.1716796875%2C%2034.32955443278273%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-117.5681640625%2C%2032.235755670897845%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-114.975390625%2C%2032.45851121119902%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-111.19609375%2C%2031.151423633862105%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-108.9548828125%2C%2031.189024707915397%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-109.1306640625%2C%2040.96720543432847%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-111.108203125%2C%2041.066677669125276%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-111.0642578125%2C%2044.57849399879169%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-112.95390625%2C%2044.484512810104995%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-116.2498046875%2C%2049.026845997157295%5D%5D%5D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=4326&f=geojson')
@@ -117,7 +119,7 @@ def get_old_data():
 #            'outFields':f'{colList[1]},{colList[2]},{colList[3]},{colList[4]}',
 #            'f':'geoJSON'}
 #    params = urllib.parse.urlencode(payload, safe=':+')
-    params = f"where=1%3D1&outFields={colList[1]},{colList[2]},{colList[3]},{colList[4]}&f=geoJSON&geometryType=esriGeometryEnvelope&geometry={bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}&spatialRel=esriSpatialRelIntersects"
+    params = f"where=1%3D1&outFields={colList[1]},{colList[2]},{colList[3]},{colList[4]}&f=geoJSON&geometryType=esriGeometryEnvelope&inSR=4326&geometry={bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}&spatialRel=esriSpatialRelIntersects"
     request = requests.get(url, params = params)
     fireJson = request.json()
     gdf = gpd.GeoDataFrame.from_features(fireJson['features']).set_crs(epsg=4326)

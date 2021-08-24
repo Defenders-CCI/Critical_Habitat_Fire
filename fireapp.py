@@ -12,42 +12,52 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import functions as fxn
 import geopandas as gpd
+import pandas as pd
 import json
 #import time
-
+# https://inciweb.nwcg.gov/incident/7603/
 # Load our fire data
 firesPath = 'data/fireGPD.geojson'
 oldFiresPath = 'data/oldFireGPD.geojson'
-chPath = 'data/burned.geojson'
+chPath = 'data/burnedCh.csv'
 fireGpd = gpd.read_file(firesPath, driver = 'GeoJSON')
 oldFireGpd = gpd.read_file(oldFiresPath , driver = 'GeoJSON')
 fireJson = json.loads(open(firesPath, 'r').read())
 oldFireJson = json.loads(open(oldFiresPath, 'r').read())
-burned = gpd.read_file(chPath, driver = 'GeoJSON')
+burned = pd.read_csv(chPath)
+ranges = pd.read_csv('data/burnedRanges.csv')
 
 # Generate list of species w/designated CH in CA, OR, WA
-species = list(set(burned.sciname.tolist()))
-comnames = sorted(list(set(burned.comname.tolist())))
+codes = list(set(ranges.SPCODE.tolist()))
+#species = list(set(ranges.SCINAME.tolist()))
+comnames = sorted(list(set(ranges.COMNAME.tolist())))
 options = [{'label':'All species', 'value':''}]
-options.extend([{'label': x, 'value': burned.sciname[burned.comname == x].values[0]} for x in comnames])
+options.extend([{'label': x, 'value': ranges.SPCODE[ranges.COMNAME == x].values[0]} for x in comnames])
+
+# fix species scinames with parentheses because this screws up downstream search and filtering
+#ranges.SCINAME = [x.replace('(', '').replace(')', '') for x in ranges.SCINAME]
+#burned.sciname = [x.replace('(', '').replace(')', '') for x in burned.sciname]
 
 # Calculate total burned area in km2
 totBurn = burned['burned'].sum()/1000000
-burnText = '{:.2f} km\u00b2 of critical habitat burned'.format(totBurn)
+burnText = 'Wildfire has burned in {:.2f} km\u00b2 of critical habitat in 2021'.format(totBurn)
 # create the initial map of burned area and bar chart
 fires = fxn.make_fire_map(fireJson, fireGpd, oldFireJson, oldFireGpd)
-bars = fxn.make_bar_chart(burned)
+bars = fxn.make_bar_chart(burned, ranges)
 
 # Create UI components
 Map = dcc.Graph(
         id = 'map',
-        figure = fires
+        figure = fires,
+        config = {'responsive':True},
+        style = {'height':'90vh'}
 )
 
 graph = dcc.Graph(
         id = 'bars',
-        figure = bars#,
-#        style = {'height':300, 'width': 500}
+        figure = bars,
+        config = {'responsive':True},
+        style = {'height':'90vh'}
 )
 
 dropdown = dcc.Dropdown(
@@ -61,16 +71,38 @@ alert = dbc.Alert(burnText,
 
 title = html.H2('Western U.S. Wildfire and ESA Critical Habitat')
 
-explanation = html.P('This app calculates and displays the amount of designated critical habitat that has been burned by wildfire in CA, OR, & WA since June 2020.')
+explanation = html.P('This app calculates and displays the area burned by wildfire since June 2021 within the ranges and critical habitat of listed species in the Western US.',
+                     style = {'marginTop':'12px'})
 
+modalText = 'In fire-adapted ecosystems across the Western US, fire is a natural disturbance that positively shapes the landscape. '\
+'Natural fires influence forest composition, structure, and pattern creating a mosaic of different seral stages supporting a rich array of biodiversity. '\
+'However, anthropogenic factors related to timber management and climate change are creating wildfire that is more intense, extensive, and frequent than under historic regimes. '\
+'These uncharacteristic wildfires can be problematic for imperiled species when they destroy necessary habitat.'
+#'Big and old trees typically are able to withstand such fires and many fire-adapted wildlife species thrive in such conditions.'\
+
+disclaimer = html.P(modalText, style = {'fontSize':'12px', 'marginTop':'12px'})
+
+attribution = html.P([
+        'Fire perimeters updated daily using ',
+        html.A('National Interagency Fire Center data',
+               href = 'https://data-nifc.opendata.arcgis.com/datasets/wildfire-perimeters',
+               style = {'marginBottom':'12px', 'textAlign':'center'})
+        ],
+        style = {'backgroundColor':'white'})
+                     
+ecos = html.P([
+        'Threatened & Endagered species range and critical habitat data provided by ',
+        html.A('ECOS',
+               href = 'https://ecos.fws.gov/ecp/',
+               style = {'marginBottom':'12px', 'textAlign':'center'})
+        ],
+        style = {'backgroundColor':'white'})
+                        
 modal = html.Div(
         [#dbc.Button('Open modal', id = 'open'),
          dbc.Modal(
                  [dbc.ModalHeader("Wildfire & Wildlife"),
-                  dbc.ModalBody('Wildfire is not always detrimental to wildlife, and fires are part of the natural cycle of many ecosystems.\
-                                For species like X,Y,&Z that inhabit early successional habitat, fire is necessary to create new habitat.\
-                                Fires that burn hotter, longer, and larger areas than historically are a threat to species if they eliminate a substantial portion of existing habitat,\
-                                or burn habitat that is not easily restored, like old growth forest.'),
+                  dbc.ModalBody(modalText),
                   dbc.ModalFooter(
                           dbc.Button('Close', id = 'close', className = 'ml-auto')
                           )
@@ -85,13 +117,17 @@ modal = html.Div(
 #                        'backgroundColor': '#003B87',
 #                        'color': '#f2f2f2'})
 
-#loading = dcc.Loading(
-#        id = 'loading',
-#        children = html.Div(graph))
+map_loader = dcc.Loading(
+        id = 'loading-map',
+        children = [Map])
 
-app = dash.Dash(__name__, external_stylesheets = [dbc.themes.BOOTSTRAP])
-# for deployed version
+graph_loader = dcc.Loading(
+        id = 'loading-graph',
+        children = [graph])
+
 app = dash.Dash(__name__, external_stylesheets = [dbc.themes.BOOTSTRAP], requests_pathname_prefix = '/app/fireapp/', routes_pathname_prefix = '/app/fireapp/')
+# for deployed version
+#app = dash.Dash(__name__, serve_locally = False, external_stylesheets = [dbc.themes.BOOTSTRAP], requests_pathname_prefix = '/app/fireapp/', routes_pathname_prefix = '/app/fireapp/')
 
 app.layout = dbc.Container([
         modal,
@@ -99,16 +135,19 @@ app.layout = dbc.Container([
                 ]),
         dbc.Row([
                 dbc.Col([
-                        html.H3('About this app', style = {'color':'#333333'}),
+#                        html.H3('About this app', style = {'color':'#333333'}),
                         explanation,
                         alert,
-                        html.P('Select a species'),
-                        dropdown,
-                        html.A('Fire data updated daily using Interagency Fire Data', href = 'https://data-nifc.opendata.arcgis.com/datasets/wildfire-perimeters')
+                        html.P('Select a species'),  
+                        dropdown,                        
+
+                        html.P('Wildfire & Wildlife'),
+                        disclaimer
                         ],
-                        width = 3,
+                        width = 2,
                         className = 'section sidebar'),
-                dbc.Col([graph, Map], width = 9)
+                dbc.Col([graph_loader, ecos], width = 5),
+                dbc.Col([map_loader, attribution], width = 5)
                         ])
                 ], fluid = True)
 
@@ -118,11 +157,18 @@ app.layout = dbc.Container([
          Output(component_id = 'bars', component_property = 'figure')],
         [Input(component_id = 'species_dropdown', component_property = 'value')]
         )
-def update_map(sp):
-    if(sp in species):
-        subset = burned[burned.sciname.str.contains(sp)].reset_index()
-        newMap = fxn.make_ch_map(sp, fireJson, fireGpd, oldFireJson, oldFireGpd)
-        newBar = fxn.make_species_bar(subset)
+def update_map(spcode):
+    print(spcode)
+    if(spcode in codes):
+        # get the index location of the species in the range data
+        sp = ranges.SCINAME[ranges.SPCODE == spcode].values[0]
+#        spp = sp.replace('(', '').replace(')','')
+#        chSub = burned[burned.spcode.str.contains(spp)].reset_index()
+        chSub = burned[burned.spcode == spcode].reset_index()
+#        rngSub = ranges[ranges.SCINAME.str.contains(spp)].reset_index()
+        rngSub = ranges[ranges.SPCODE == spcode].reset_index()
+        newMap = fxn.make_ch_map(sp, spcode, fireJson, fireGpd, oldFireJson, oldFireGpd)
+        newBar = fxn.make_species_bar(chSub, rngSub)
     else:
         newMap = fires
         newBar = bars
