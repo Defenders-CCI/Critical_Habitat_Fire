@@ -141,7 +141,7 @@ app.layout = dbc.Container([
                         html.P('Select a species'),  
                         dropdown,                        
 
-                        html.P('Wildfire & Wildlife'),
+                        html.P('Wildfire & Wildlife', style = {'marginTop':'15px', 'marginBottom':'0px'}),
                         disclaimer
                         ],
                         width = 2,
@@ -160,14 +160,22 @@ app.layout = dbc.Container([
 def update_map(spcode):
     print(spcode)
     if(spcode in codes):
-        # get the index location of the species in the range data
-        sp = ranges.SCINAME[ranges.SPCODE == spcode].values[0]
+ 
+        # subset the burned critical habitat DataFrame by selected species code
+        chSub = burned[burned.spcode == spcode].reset_index()
+        # subset the burned ranges DataFrame by selected species code
+        rngSub = ranges[ranges.SPCODE == spcode].reset_index()
+
+        # get the index location of the species in the range data        
+#        rngIndex = rngSub.index.values[0]
+#        chIndex = chSub.index.values
+        
 #        spp = sp.replace('(', '').replace(')','')
 #        chSub = burned[burned.spcode.str.contains(spp)].reset_index()
-        chSub = burned[burned.spcode == spcode].reset_index()
+
 #        rngSub = ranges[ranges.SCINAME.str.contains(spp)].reset_index()
-        rngSub = ranges[ranges.SPCODE == spcode].reset_index()
-        newMap = fxn.make_ch_map(sp, spcode, fireJson, fireGpd, oldFireJson, oldFireGpd)
+
+        newMap = fxn.make_ch_map(rngSub, chSub, fireJson, fireGpd, oldFireJson, oldFireGpd)
         newBar = fxn.make_species_bar(chSub, rngSub)
     else:
         newMap = fires

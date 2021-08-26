@@ -12,6 +12,18 @@ import numpy as np
 import urllib
 import json
 
+def wkt_to_json(df):
+    df['geometry'] = gpd.GeoSeries.from_wkt(df['wkt'])
+    gdf = gpd.GeoDataFrame(df, geometry = 'geometry')
+    js = json.loads(gdf.to_json())
+    return js
+
+def write_wkt(gdf, path):
+    gdf['wkt'] = gdf.geometry.to_wkt()
+#    epsg = gdf.crs.to_epsg()
+#    gdf['epsg'] = epsg
+    gdf.drop('geometry', axis = 1).to_csv(path)
+
 # TODO: add ability to provide list of states
 def get_species_list():
     url = "https://ecos.fws.gov/ecp/pullreports/catalog/species/report/species/export?format=json&columns=%2Fspecies%40cn%2Csn%2Cstatus%2Cdesc%2Clisting_date&sort=%2Fspecies%40cn%20asc%3B%2Fspecies%40sn%20asc&filter=%2Fspecies%2Frange_state%40abbrev%20in%20('CA'%2C'OR'%2C'WA')&filter=%2Fspecies%2Fcrithab_docs%40crithab_status%20%3D%20'Final'"
@@ -51,23 +63,38 @@ def get_range_envelope(sp):
 #    coords = [[float(coord) for coord in pair.split(sep = ' ')] for pair in coord_string_pairs]
 #    return (coords[0][0], coords[0][1], coords[2][0], coords[2][1], js)
 
-def get_range_json(sp, spcode):
-    bbox = get_range_envelope(sp)
-    gdf = gpd.read_file('data/rangeGPD.shp', bbox = bbox).to_crs(epsg = 4326)
-    gdf = gdf[gdf.SPCODE == spcode]
+def get_ch_json(spcode):
+    url = 'https://services.arcgis.com/QVENGdaPbd4LUkLV/ArcGIS/rest/services/USFWS_Critical_Habitat/FeatureServer/1/query'
+    spcode_query = f"spcode='{spcode}'"
+    params = {
+            'f':'geojson',
+            'returnGeometry':'true',
+            'outFields':'comname,sciname,spcode',
+            'where':spcode_query}
+#    outFields=comname%2C+sciname%2C+spcode
+    payload = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
+    request = requests.get(url, params = payload)
+    js = request.json()
+    return js
+    
+
+#def get_ch_json(species):
+#  url = "https://services.arcgis.com/QVENGdaPbd4LUkLV/ArcGIS/rest/services/USFWS_Critical_Habitat/FeatureServer/1/query?where=sciname+IN+%28%27{}%27%29&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&resultType=none&distance=0.0&units=esriSRUnit_Meter&returnGeodetic=false&outFields=sciname%2C+comname&returnGeometry=true&returnCentroid=false&featureEncoding=esriDefault&multipatchOption=xyFootprint&maxAllowableOffset=&geometryPrecision=&outSR=&datumTransformation=&applyVCSProjection=false&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnExtentOnly=false&returnQueryGeometry=false&returnDistinctValues=false&cacheHint=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&having=&resultOffset=&resultRecordCount=&returnZ=false&returnM=false&returnExceededLimitFeatures=true&quantizationParameters=&sqlFormat=none&f=pgeojson&token="
+#  # for a single species
+##  sciname = '+'.join(species.split(" "))
+#  # for one in a list of species
+#  sciname = '%27%2C+%27'.join(['+'.join(sp.split(" ")) for sp in species])
+#  print(url.format(sciname))
+#  chRequest = requests.get(url.format(sciname))
+#  return chRequest.json()
+
+def get_range_json(index):
+    gdf = gpd.read_file('data/rangeGPD.shp', rows = slice(index, index+1)).to_crs(epsg = 4326)
+#    bbox = get_range_envelope(sp)
+#    gdf = gpd.read_file('data/rangeGPD.shp', bbox = bbox).to_crs(epsg = 4326)
+#    gdf = gdf[gdf.SPCODE == spcode]
     js = json.loads(gdf.to_json())
     return gdf, js
-
-
-def get_ch_json(species):
-  url = "https://services.arcgis.com/QVENGdaPbd4LUkLV/ArcGIS/rest/services/USFWS_Critical_Habitat/FeatureServer/1/query?where=sciname+IN+%28%27{}%27%29&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&resultType=none&distance=0.0&units=esriSRUnit_Meter&returnGeodetic=false&outFields=sciname%2C+comname&returnGeometry=true&returnCentroid=false&featureEncoding=esriDefault&multipatchOption=xyFootprint&maxAllowableOffset=&geometryPrecision=&outSR=&datumTransformation=&applyVCSProjection=false&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnExtentOnly=false&returnQueryGeometry=false&returnDistinctValues=false&cacheHint=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&having=&resultOffset=&resultRecordCount=&returnZ=false&returnM=false&returnExceededLimitFeatures=true&quantizationParameters=&sqlFormat=none&f=pgeojson&token="
-  # for a single species
-#  sciname = '+'.join(species.split(" "))
-  # for one in a list of species
-  sciname = '%27%2C+%27'.join(['+'.join(sp.split(" ")) for sp in species])
-  print(url.format(sciname))
-  chRequest = requests.get(url.format(sciname))
-  return chRequest.json()
 
 def getBoundsZoomLevel(bounds, mapDim):
     """
@@ -103,7 +130,7 @@ def getBoundsZoomLevel(bounds, mapDim):
 
     return min(latZoom, lngZoom, ZOOM_MAX)
 
-def make_ch_map(sp, spcode, fireJson, fireGpd, oldFireJson, oldFireGpd):
+def make_ch_map(rng, ch, fireJson, fireGpd, oldFireJson, oldFireGpd):
     """
     Create a plotly map showing critical habitat for a species with 
     current fire and burned area data
@@ -121,24 +148,24 @@ def make_ch_map(sp, spcode, fireJson, fireGpd, oldFireJson, oldFireGpd):
     Plotly Figure: choropleth map showing species range boundaries, current fire footprints
         and previously burned area.
     """
-    rng, rngJson = get_range_json(sp, spcode)
+#    rng, rngJson = get_range_json(index)
     rng['count'] = 1,
+    rngJson = wkt_to_json(rng)
     center = rng.geometry[0].centroid
     bounds = rng.geometry[0].bounds
     
-    chGpd = gpd.read_file('data/chGPD.geojson', driver = 'GeoJSON', bbox = bounds)
-    chGpd = chGpd[chGpd.spcode == spcode].reset_index()
+#    chGpd = gpd.read_file('data/chGPD.geojson', driver = 'GeoJSON', bbox = bounds)
+#    chGpd = chGpd[chGpd.spcode == spcode].reset_index()
     
 #    try:
-#        chJson = get_ch_json([sp])
+#        chJson = get_ch_json(spcode)
 #        chGpd = gpd.GeoDataFrame.from_features(chJson)
 #    except:
 #        print('failed to get CH data from ECOS')
 #        chGpd = gpd.read_file('data/bigChGPD.geojson', driver = 'GeoJSON')
-#        chGpd = chGpd[chGpd.sciname == sp].reset_index()
+#        chGpd = chGpd[chGpd.spcode == spcode].reset_index()
 #        chJson = chGpd.to_json()
     
-
 #   take a spatial subset of fire data near the species critical habitat
     subset = fireGpd.cx[bounds[0]:bounds[2], bounds[1]:bounds[3]]
     oldSubset = oldFireGpd.cx[bounds[0]:bounds[2], bounds[1]:bounds[3]]
@@ -166,18 +193,19 @@ def make_ch_map(sp, spcode, fireJson, fireGpd, oldFireJson, oldFireGpd):
     
     data = [layer]
     
-    if len(chGpd) > 0:
-        
-        chGpd['count'] = 1
-        chJson = json.loads(chGpd.to_json())
+    if len(ch) > 0:
+#        idx = chindex[0]
+#        chGpd = gpd.read_file('data/chGPD.geojson', driver = 'GeoJSON', rows = slice(idx, idx+1))
+        ch['count'] = 1
+        chJson = wkt_to_json(ch)
         
         layer1 = go.Choroplethmapbox(
           geojson = chJson,
-          locations = chGpd.comname,
-          z = chGpd['count'],
+          locations = ch.comname,
+          z = ch['count'],
           colorscale = ['green', 'green'],
           featureidkey = 'properties.comname',
-          name = f'{chGpd.comname.tolist()[0]} CH',
+          name = f'{ch.comname.tolist()[0]} CH',
           marker = {'line':
                     {'color':'green',
                      'width': 2}

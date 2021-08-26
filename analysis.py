@@ -31,7 +31,7 @@ print(f'merging fire data took {(end-start)}s')
 print('reading ch data')
 start = time()
 chPath = 'data/chGPD.geojson'
-chGpd = gpd.read_file(chPath, driver = 'GeoJSON').to_crs(epsg = 3395)
+chGpd = gpd.read_file(chPath, driver = 'GeoJSON')#.to_crs(epsg = 3395)
 end = time()
 print(f'reading ch data took {(end-start)}s')
 
@@ -55,24 +55,28 @@ print(f'reading ch data took {(end-start)}s')
 
 print('computing ch x burned intersection')
 start = time()
-chGpd['burned'] = chGpd.geometry.buffer(0.1).intersection(fireUnion).area
+chGpd['burned'] = chGpd.geometry.to_crs(epsg = 3395).buffer(0.1).intersection(fireUnion).area
 end = time()
 print(f'computing ch x burned intersection took {(end-start)}s')
 print('writing burned ch to file')
+chGpd['wkt'] = chGpd.geometry.to_wkt()
+assert(chGpd.crs.to_epsg() == 4326), 'projection should be 4326'
 chGpd.drop('geometry', axis = 1).to_csv('data/burnedCh.csv')
 del chGpd
 
 print('reading range data')
 start = time()
 rangePath = 'data/rangeGPD.shp'
-rangeGpd = gpd.read_file(rangePath).to_crs(epsg = 3395)
+rangeGpd = gpd.read_file(rangePath)#.to_crs(epsg = 3395)
 end = time()
 print(f'reading range data took {(end-start)}s')
 
 print('computing range x burned intersection')
 start = time()
-rangeGpd['burned'] = rangeGpd.geometry.buffer(0.1).intersection(fireUnion).area
+rangeGpd['burned'] = rangeGpd.geometry.to_crs(epsg = 3395).buffer(0.1).intersection(fireUnion).area
 end = time()
 print(f'computing range x burned intersection took {(end-start)}s')
+rangeGpd['wkt'] = rangeGpd.geometry.to_wkt()
 print('writing burned ranges to file')
+assert(rangeGpd.crs.to_epsg() == 4326), 'projection should be 4326'
 rangeGpd.drop('geometry', axis = 1).to_csv('data/burnedRanges.csv')
