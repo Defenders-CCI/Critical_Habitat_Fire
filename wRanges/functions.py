@@ -130,14 +130,14 @@ def getBoundsZoomLevel(bounds, mapDim):
 
     return min(latZoom, lngZoom, ZOOM_MAX)
 
-def make_ch_map(chSub, fireJson, fireGpd, oldFireJson, oldFireGpd):
+def make_ch_map(rngindex, chSub, fireJson, fireGpd, oldFireJson, oldFireGpd):
     """
     Create a plotly map showing critical habitat for a species with 
     current fire and burned area data
     
     Parameters
     ----
-    chSub (DataFrame): DataFrame containing selected species
+    spcode (str): ECOS species identifier
     fireJson (GeoJSON): object containing geometry of current fires
     fireGpd (GeoDataFrame): object containing geometry and attribute data of current fires
     oldFireJson (GeoJSON): object containing geometry of previously burned area
@@ -148,23 +148,14 @@ def make_ch_map(chSub, fireJson, fireGpd, oldFireJson, oldFireGpd):
     Plotly Figure: choropleth map showing species range boundaries, current fire footprints
         and previously burned area.
     """
-    chindex = chSub.index.values[0]
-    chcode = chSub.spcode.values[0]
+    rngGdf, rngJson = get_range_json(rngindex)
+    rngGdf['count'] = 1,
+#    rngJson = wkt_to_json(rng)
+    center = rngGdf.geometry[0].centroid
+    bounds = rngGdf.geometry[0].bounds
     
-     # first try pulling critical habitat spatial data from the web server   
-    try:
-        chJson = get_ch_json(chcode)
-        chGdf = gpd.GeoDataFrame.from_features(chJson)
-    # if that fails, as it will for big files, get the relevant row from local data
-    except:
-        print('failed to get CH data from ECOS')
-        chGdf = gpd.read_file('data/chGPD.shp', ignore_fields = ['GlobalID', 'OBJECTID_1', 'Shape__Area', 'status', 'effectdate'], rows = slice(chindex, chindex+1))
-        
-    chGdf['count'] = 1
-    chJson = json.loads(chGdf.to_json())
-    
-    center = chGdf.geometry[0].centroid
-    bounds = chGdf.geometry[0].bounds
+#    chGpd = gpd.read_file('data/chGPD.geojson', driver = 'GeoJSON', bbox = bounds)
+#    chGpd = chGpd[chGpd.spcode == spcode].reset_index()
     
 #   take a spatial subset of fire data near the species critical habitat
     subset = fireGpd.cx[bounds[0]:bounds[2], bounds[1]:bounds[3]]
@@ -181,21 +172,50 @@ def make_ch_map(chSub, fireJson, fireGpd, oldFireJson, oldFireGpd):
                      margin = {'r':15, 'l':15, 't':15, 'b':15})
     
     layer = go.Choroplethmapbox(
-      geojson = chJson,
-      locations = chGdf.comname,
-      z = chGdf['count'],
-      colorscale = ['green', 'green'],
-      featureidkey = 'properties.comname',
-      name = f'{chGdf.comname.tolist()[0]} CH',
-      marker = {'line':
-                {'color':'green',
-                 'width': 2}
-      },
-      showscale = False,
-      showlegend = True
-    )
+            geojson = rngJson,
+            locations = rngGdf.COMNAME,
+            z = rngGdf['count'],
+            colorscale = ['purple', 'purple'],
+            featureidkey = 'properties.COMNAME',
+            name = f'{rngGdf.COMNAME.tolist()[0]} range',
+            marker = {'line':{'color':'purple', 'width':2}},
+            showscale = False,
+            showlegend = True)
     
     data = [layer]
+    
+    if len(chSub) > 0:
+        # first try pulling critical habitat spatial data from the web server
+        chindex = chSub.index.values[0]
+        chcode = chSub.spcode.values[0]
+        
+        try:
+            chJson = get_ch_json(chcode)
+            chGdf = gpd.GeoDataFrame.from_features(chJson)
+        # if that fails, as it will for big files, get the relevant row from local data
+        except:
+            print('failed to get CH data from ECOS')
+            chGdf = gpd.read_file('data/chGPD.shp', ignore_fields = ['GlobalID', 'OBJECTID_1', 'Shape__Area', 'status', 'effectdate'], rows = slice(chindex, chindex+1))
+            
+        chGdf['count'] = 1
+        chJson = json.loads(chGdf.to_json())
+        
+        layer1 = go.Choroplethmapbox(
+          geojson = chJson,
+          locations = chGdf.comname,
+          z = chGdf['count'],
+          colorscale = ['green', 'green'],
+          featureidkey = 'properties.comname',
+          name = f'{chGdf.comname.tolist()[0]} CH',
+          marker = {'line':
+                    {'color':'green',
+                     'width': 2}
+          },
+          showscale = False,
+          showlegend = True
+        )
+        
+        data.append(layer1)
     
     if len(oldSubset) > 0:
 
@@ -304,10 +324,11 @@ def calc_burned_area(ch, fire, dist):
     return area
 
 # make a figure of burned area by species
-def make_bar_chart(ch):
+def make_bar_chart(ch, ranges):
     """Create a plotly bar chart showing burned critical habitat by species
     Parameters:
-        ch (DataFrame):critical habitat data with burned area
+        ch (GeoDataFrame):critical habitat data with burned area
+        ranges (GeoDataFrame):species range data with burned area
     Return:
         plotly Figure: bar chart figure
     """
@@ -329,7 +350,26 @@ def make_bar_chart(ch):
         hovertemplate = "%{y}<br>" + "%{x:.2f} km<sup>2</sup> burned<br>" + "%{text:.2f}% of critical habitat",
         marker_color = 'black')
     
+    #Now process range data
+    ranges['percent'] = (ranges.burned/ranges.Area)*100
+    duplicates = [not x for x in ranges.duplicated(['COMNAME', 'burned'])]
+    topTen = ranges[duplicates & (ranges.burned >0)].sort_values(by = 'burned', ascending = False).iloc[0:20]
+    burned = topTen.burned/1000000
+    maxburn = max(burned)
+    
+    rangeTrace = go.Bar(
+        y = topTen.COMNAME,
+        x = burned,
+        name = 'Burned range',
+        text = topTen.percent,
+        texttemplate = '%{x:.2f} km<sup>2</sup> (%{text:.2f}%)',
+        textposition = 'outside',
+        orientation = 'h',
+        hovertemplate = "%{y}<br>" + "%{x:.2f} km<sup>2</sup> burned<br>" + "%{text:.2f}% of range",
+        marker_color = 'grey')
+    
     layout = go.Layout(
+            barmode = 'overlay',
             xaxis = {
                     'title':'Burned area (km<sup>2</sup>)',
                     'showgrid':False,
@@ -353,10 +393,10 @@ def make_bar_chart(ch):
             plot_bgcolor='rgba(0,0,0,0)'
             )
     
-    fig = go.Figure([chTrace], layout)
+    fig = go.Figure([rangeTrace, chTrace], layout)
     return fig
 
-def make_species_bar(ch):
+def make_species_bar(ch, rng):
     """Create a bootstrap alert for a single species
     
     Parameters
@@ -369,33 +409,61 @@ def make_species_bar(ch):
     Plotly Figure
     """
     
-    comname = ch.comname
-    chArea = ch.Area.sum()/1000000
-    chBurn = ch.burned.sum()/1000000
+    rngArea = rng.Area.sum()/1000000
+    rngBurn = rng.burned.sum()/1000000
+    comname = rng.COMNAME
     
     trace1 = go.Bar(
-            y = [chArea],
-            x = ['Critical habitat'],
-            name = 'Critical habitat',
-#                orientation = 'h',
-            marker_color = 'green',
+            y = [rngArea],
+            x = ['Range'],
+            name = 'Range',
+#            orientation = 'h',
+            marker_color = 'purple',
             showlegend = True,
-            hovertemplate = "%{y:.2f} km<sup>2</sup> unburned critical habitat")
+            hovertemplate = "%{y:.2f} km<sup>2</sup> unburned range")
     
     trace2 = go.Bar(
-            y = [chBurn],
-            x = ['Critical habitat'],
-            name = 'Burned CH',
-            text = chBurn/chArea,
+            y = [rngBurn],
+            x = ['Range'],
+            name = 'Burned', 
+            text = rngBurn/rngArea,
             texttemplate = '%{y:.2f} km<sup>2</sup> (%{text:.2f}%) burned',
             textposition = 'outside',
             textfont_color = 'white',
-#                orientation = 'h',
-            marker_color = 'black',
-            showlegend = True,
-            hovertemplate = "%{y:.2f} km<sup>2</sup> burned critical habitat")
+#            orientation = 'h',
+            marker_color = 'grey',
+            hovertemplate = "%{y:.2f} km<sup>2</sup> burned range")
     
     data = [trace1, trace2]
+    
+    if len(ch) > 0:
+        chArea = ch.Area.sum()/1000000
+        chBurn = ch.burned.sum()/1000000
+        
+        trace3 = go.Bar(
+                y = [chArea],
+                x = ['Critical habitat'],
+                name = 'Critical habitat',
+#                orientation = 'h',
+                marker_color = 'green',
+                showlegend = True,
+                hovertemplate = "%{y:.2f} km<sup>2</sup> unburned critical habitat")
+        
+        trace4 = go.Bar(
+                y = [chBurn],
+                x = ['Critical habitat'],
+                name = 'Burned CH',
+                text = chBurn/chArea,
+                texttemplate = '%{y:.2f} km<sup>2</sup> (%{text:.2f}%) burned',
+                textposition = 'outside',
+                textfont_color = 'white',
+#                orientation = 'h',
+                marker_color = 'black',
+                showlegend = True,
+                hovertemplate = "%{y:.2f} km<sup>2</sup> burned critical habitat")
+        
+        data.append(trace3)
+        data.append(trace4)
     
     layout = go.Layout(
             yaxis={'title': 'Area (km<sup>2</sup>)'},

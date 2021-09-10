@@ -25,13 +25,14 @@ oldFireGpd = gpd.read_file(oldFiresPath , driver = 'GeoJSON')
 fireJson = json.loads(open(firesPath, 'r').read())
 oldFireJson = json.loads(open(oldFiresPath, 'r').read())
 burned = pd.read_csv(chPath)
+ranges = pd.read_csv('data/burnedRanges.csv')
 
 # Generate list of species w/designated CH in CA, OR, WA
-codes = list(set(burned.spcode.tolist()))
+codes = list(set(ranges.SPCODE.tolist()))
 #species = list(set(ranges.SCINAME.tolist()))
-comnames = sorted(list(set(burned.comname.tolist())))
+comnames = sorted(list(set(ranges.COMNAME.tolist())))
 options = [{'label':'All species', 'value':''}]
-options.extend([{'label': x, 'value': burned.spcode[burned.comname == x].values[0]} for x in comnames])
+options.extend([{'label': x, 'value': ranges.SPCODE[ranges.COMNAME == x].values[0]} for x in comnames])
 
 # fix species scinames with parentheses because this screws up downstream search and filtering
 #ranges.SCINAME = [x.replace('(', '').replace(')', '') for x in ranges.SCINAME]
@@ -42,7 +43,7 @@ totBurn = burned['burned'].sum()/1000000
 burnText = 'Wildfire has burned in {:.2f} km\u00b2 of critical habitat in 2021'.format(totBurn)
 # create the initial map of burned area and bar chart
 fires = fxn.make_fire_map(fireJson, fireGpd, oldFireJson, oldFireGpd)
-bars = fxn.make_bar_chart(burned)
+bars = fxn.make_bar_chart(burned, ranges)
 
 # Create UI components
 Map = dcc.Graph(
@@ -162,7 +163,11 @@ def update_map(spcode):
  
         # subset the burned critical habitat DataFrame by selected species code
         chSub = burned[burned.spcode == spcode]
+        # subset the burned ranges DataFrame by selected species code
+        rngSub = ranges[ranges.SPCODE == spcode]
 
+        # get the index location of the species in the range data        
+        rngindex = rngSub.index.values[0]
 #        chIndex = chSub.index.values
         
 #        spp = sp.replace('(', '').replace(')','')
@@ -170,8 +175,8 @@ def update_map(spcode):
 
 #        rngSub = ranges[ranges.SCINAME.str.contains(spp)].reset_index()
 
-        newMap = fxn.make_ch_map(chSub, fireJson, fireGpd, oldFireJson, oldFireGpd)
-        newBar = fxn.make_species_bar(chSub.reset_index())
+        newMap = fxn.make_ch_map(rngindex, chSub, fireJson, fireGpd, oldFireJson, oldFireGpd)
+        newBar = fxn.make_species_bar(chSub.reset_index(), rngSub.reset_index())
     else:
         newMap = fires
         newBar = bars
