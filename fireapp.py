@@ -17,8 +17,8 @@ import json
 #import time
 # https://inciweb.nwcg.gov/incident/7603/
 # Load our fire data
-firesPath = 'data/fireGPD.geojson'
-oldFiresPath = 'data/oldFireGPD.geojson'
+firesPath = 'data/fireGDFsimple.geojson'
+oldFiresPath = 'data/oldFireGDFsimple.geojson'
 chPath = 'data/burnedCh.csv'
 fireGpd = gpd.read_file(firesPath, driver = 'GeoJSON')
 oldFireGpd = gpd.read_file(oldFiresPath , driver = 'GeoJSON')
@@ -124,9 +124,9 @@ graph_loader = dcc.Loading(
         id = 'loading-graph',
         children = [graph])
 
-app = dash.Dash(__name__, external_stylesheets = [dbc.themes.BOOTSTRAP], requests_pathname_prefix = '/app/fireapp/', routes_pathname_prefix = '/app/fireapp/')
+#app = dash.Dash(__name__, external_stylesheets = [dbc.themes.BOOTSTRAP], requests_pathname_prefix = '/app/fireapp/', routes_pathname_prefix = '/app/fireapp/')
 # for deployed version
-#app = dash.Dash(__name__, serve_locally = False, external_stylesheets = [dbc.themes.BOOTSTRAP], requests_pathname_prefix = '/app/fireapp/', routes_pathname_prefix = '/app/fireapp/')
+app = dash.Dash(__name__, serve_locally = False, external_stylesheets = [dbc.themes.BOOTSTRAP], requests_pathname_prefix = '/app/fireapp/', routes_pathname_prefix = '/app/fireapp/')
 
 app.layout = dbc.Container([
         modal,

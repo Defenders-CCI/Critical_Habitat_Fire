@@ -88,13 +88,13 @@ def get_ch_json(spcode):
 #  chRequest = requests.get(url.format(sciname))
 #  return chRequest.json()
 
-def get_range_json(index):
-    gdf = gpd.read_file('data/rangeGPD.shp', ignore_fields = ['STATUS_ABB', 'Area'], rows = slice(index, index+1)).to_crs(epsg = 4326)
-#    bbox = get_range_envelope(sp)
-#    gdf = gpd.read_file('data/rangeGPD.shp', bbox = bbox).to_crs(epsg = 4326)
-#    gdf = gdf[gdf.SPCODE == spcode]
-    js = json.loads(gdf.to_json())
-    return gdf, js
+#def get_range_json(index):
+#    gdf = gpd.read_file('data/rangeGPD.shp', ignore_fields = ['STATUS_ABB', 'Area'], rows = slice(index, index+1)).to_crs(epsg = 4326)
+##    bbox = get_range_envelope(sp)
+##    gdf = gpd.read_file('data/rangeGPD.shp', bbox = bbox).to_crs(epsg = 4326)
+##    gdf = gdf[gdf.SPCODE == spcode]
+#    js = json.loads(gdf.to_json())
+#    return gdf, js
 
 def getBoundsZoomLevel(bounds, mapDim):
     """
