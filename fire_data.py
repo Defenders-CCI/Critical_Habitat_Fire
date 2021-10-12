@@ -97,6 +97,9 @@ def get_current_data():
     print('writing new data to file')
     gdf.to_file('data/fireGPD.geojson', driver = 'GeoJSON')
     print('data saved to data/fireGPD.geojson')
+    gdf.geometry = gdf.geometry.simplify(0.00001)
+    gdf.to_file('data/fireGDFsimple.geojson', driver = 'GeoJSON')
+    print('simplified data saved to data/fireGDFsimple.geojson')
     
     
 #firesRequest = requests.get('https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/Public_Wildfire_Perimeters_View/FeatureServer/0/query?where=1%3D1&outFields=*&geometry=%5B%5B%5B-125.25859375%2C%2049.05565283019709%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-124.6873046875%2C%2039.69425229061023%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-121.1716796875%2C%2034.32955443278273%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-117.5681640625%2C%2032.235755670897845%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-114.975390625%2C%2032.45851121119902%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-111.19609375%2C%2031.151423633862105%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-108.9548828125%2C%2031.189024707915397%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-109.1306640625%2C%2040.96720543432847%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-111.108203125%2C%2041.066677669125276%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-111.0642578125%2C%2044.57849399879169%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-112.95390625%2C%2044.484512810104995%5D%2C%20%20%20%20%20%20%20%20%20%20%20%5B-116.2498046875%2C%2049.026845997157295%5D%5D%5D&geometryType=esriGeometryPolygon&inSR=4326&spatialRel=esriSpatialRelIntersects&outSR=4326&f=geojson')
@@ -139,6 +142,10 @@ def get_old_data():
 #    subset = gpd.sjoin(dissolved, studyArea, 'inner', 'within')
     dissolved['Area'] = dissolved.geometry.to_crs(epsg=3395).area
     dissolved.to_file('data/oldFireGPD.geojson', driver = 'GeoJSON')
+    print('data saved to data/oldFireGPD.geojson')
+    dissolved.geometry = dissolved.geometry.simplify(0.00001)
+    dissolved.to_file('data/oldFireGDFsimple.geojson', driver = 'GeoJSON')
+    print('simplified data saved to data/oldFireGDFsimple.geojson')
     
 
 # alternative using bounds of CA, OR, WA - not working due to timeout   
